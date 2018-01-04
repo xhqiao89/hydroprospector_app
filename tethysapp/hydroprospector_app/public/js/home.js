@@ -1,5 +1,7 @@
 var map, click_point_layer, river_layer, basin_layer, snap_point_layer;
 var outlet_x, outlet_y, dam_height, interval;
+var snappoint_coords, snappoint_x, snappoint_y;
+var chart;
 
 var wd_status = $('#wd-status');
 var sc_status = $('#sc-status');
@@ -106,7 +108,94 @@ $(document).ready(function () {
         // map.getView().setCenter(evt.coordinate);
         // map.getView().setZoom(14);
 
-    })
+    });
+
+    //define highchart
+    var chart_options = {
+		chart: {
+			renderTo: 'sc-chart',
+			zoomType: 'x'
+		},
+		loading: {
+			labelStyle: {
+				top: '45%',
+				left: '50%',
+				// backgroundImage: 'url("/static/snow_inspector/images/ajax-loader.gif")',
+				display: 'block',
+				width: '134px',
+				height: '100px',
+				backgroundColor: '#000'
+			}
+		},
+		title: {
+			text: 'Storage Capacity Curve'
+		},
+		xAxis: {
+			type: 'Storage(m3)'
+			// min: 0,
+			// max: 100
+		},
+		yAxis: {
+			title: {
+				text: 'Dam height(m)'
+			},
+			min: 0.0,
+			max: 100.0
+		},
+		legend: {
+			enabled: false
+		},
+                tooltip: {
+                    useHTML: true
+                },
+		plotOptions: {
+			series: {
+				cursor: 'pointer',
+				allowPointSelect: true,
+				point: {
+					events: {
+						click: function (e) {
+							// mouse click event
+							console.log('you clicked the chart!');
+							var selected_date = Highcharts.dateFormat('%Y-%m-%d', this.x);
+							add_snow_pixels_to_map(map, selected_date);
+						},
+						mouseOver: function() {
+							// mouse hover event
+							console.log('mouse over!');
+							var selected_date = Highcharts.dateFormat('%Y-%m-%d', this.x);
+							add_snow_pixels_to_map(map, selected_date);
+						}
+					}
+				}
+			},
+			line: {
+				color: Highcharts.getOptions().colors[0],
+				marker: {
+					radius: 2,
+					states: {
+                		select: {
+                    		fillColor: 'red',
+                    		lineWidth: 0,
+							radius: 4
+                		}
+            		}
+				},
+				lineWidth: 1,
+				states: {
+					hover: {
+						lineWidth: 1
+					}
+				},
+				threshold: null
+			}
+		},
+		series: [{}]
+	};
+
+	chart_options.series[0].type = 'line';
+	chart_options.series[0].name = 'Storage Capacity';
+	chart = new Highcharts.Chart(chart_options);
 
 });
 
@@ -180,39 +269,13 @@ function run_wd_calc(xlon, ylat){
     });
 }
 
-function run_sc_calc(xlon, ylat){
+function feature2geojson(myFeature) {
+    //Convert an OpenLayers 3 feature to GeoJSON object
+    var geojsonformatter = new ol.format.GeoJSON();
+    var myGeojson = geojsonformatter.writeFeature(myFeature,{featureProjection:'EPSG:3857', dataProjection:'EPSG:3857'});
+    //var myFeature = new ol.Feature(myGeometry);
+    return myGeojson;
 
-    sc_status.removeClass('success');
-    sc_status.removeClass('error');
-    sc_waiting_output();
-
-    // $.ajax({
-    //     type: 'GET',
-    //     url: 'run-sc',
-    //     dataType:'json',
-    //     data: {
-    //             'xlon': outlet_x,
-    //             'ylat': outlet_y
-    //     },
-    //     success: function (data) {
-    //
-    //         basin_layer.getSource().addFeatures(geojson2feature(data.watershed_GEOJSON));
-    //         snap_point_layer.getSource().addFeatures(geojson2feature(data.snappoint_GEOJSON));
-    //         // wd_status.removeClass('calculating');
-    //         wd_status.addClass('success');
-    //         wd_status.html('<em>Success!</em>');
-    //
-    //         map.getView().fit(basin_layer.getSource().getExtent(), map.getSize())
-    //
-    //
-    //     },
-    //     error: function (jqXHR, textStatus, errorThrown) {
-    //         alert("Error");
-    //         // wd_status.removeClass('calculating');
-    //         wd_status.addClass('error');
-    //         wd_status.html('<em>' + errorThrown + '</em>');
-    //     }
-    // });
 }
 
 function wd_waiting_output() {
@@ -224,6 +287,138 @@ function wd_waiting_output() {
 function sc_waiting_output() {
     var wait_text = "<strong>Storage capacity curve calculating ...</strong><br>" +
         "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src='/static/hydroprospector_app/images/earth_globe.gif'>";
-    document.getElementById('wd-status').innerHTML = wait_text;
+    document.getElementById('sc-status').innerHTML = wait_text;
+}
+
+// var csrftoken = $.cookie('csrftoken');
+//
+// function csrfSafeMethod(method) {
+//     // these HTTP methods do not require CSRF protection
+//     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+// }
+//
+// $.ajaxSetup({
+//     beforeSend: function(xhr, settings) {
+//         if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+//             xhr.setRequestHeader("X-CSRFToken", csrftoken);
+//         }
+//     }
+// });
+
+// using jQuery
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+var csrftoken = getCookie('csrftoken');
+
+function run_sc_calc(){
+
+    sc_status.removeClass('success');
+    sc_status.removeClass('error');
+    sc_waiting_output();
+    chart.series[0].setData([]);
+
+    dam_height = document.getElementById("damHeight").value;
+    interval = document.getElementById("interval").value;
+
+    // read snapped point coordinates from snap point layer
+    var snappoint_source = snap_point_layer.getSource();
+        snappoint_source.forEachFeature(function(feature){
+            snappoint_coords = feature.getGeometry().getCoordinates();
+        });
+    snappoint_x = snappoint_coords.toString().split(',')[0];
+    snappoint_y = snappoint_coords.toString().split(',')[1];
+    // conver watershed feature in basin layer to geojson
+    var watershed_geojson = feature2geojson(basin_layer.getSource().getFeatures()[0]);
+        // alert(watershed_geojson);
+
+    var dam_list=[5,10,15,20,25,30,35,40,45,50,55,60];
+    //the number of the request currently executed
+    var iRequest = 0;
+    var lake_volume_list=[];
+
+    // Instead of using a for-loop of ajax calls, the benefit of using recursive calls of ajax is to make sure the results come
+    //back in sequence as they were sent.
+
+    function ajax2() {
+
+        $.ajax({
+            type: 'POST',
+            url: 'run-sc/',
+            headers: {"X-CSRFToken": csrftoken},
+            dataType:'json',
+            data: {
+                'outlet_x': snappoint_x,
+                'outlet_y': snappoint_y,
+                'dam_height':dam_list[iRequest],
+                'watershed_geojson':watershed_geojson
+        },
+        success: function (data) {
+
+            //basin_layer.getSource().addFeatures(geojson2feature(data.lake_GEOJSON));
+            var lake_volume_str = data.lake_volume;
+
+            map.getView().fit(basin_layer.getSource().getExtent(), map.getSize())
+
+            if (iRequest === 0) {
+                // set_chart_tooltip(chart, response_data.tile,
+                //                       response_data.xpixel,response_data.ypixel);
+                console.log("first point")
+
+            }
+
+            var lake_volume=parseFloat(lake_volume_str);
+
+            lake_volume_list.push(lake_volume);
+            console.log(lake_volume_list);
+
+            add_data_to_chart(dam_list[iRequest], lake_volume, chart);
+
+            iRequest++;
+            if (iRequest < dam_list.length) {
+                ajax2();
+            }else{
+                sc_status.addClass('success');
+                sc_status.html('<em>Success!</em>');
+            }
+
+
+
+
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            alert("Error");
+            // wd_status.removeClass('calculating');
+            sc_status.addClass('error');
+            sc_status.html('<em>' + errorThrown + '</em>');
+        }
+    });
+
+    }
+
+    ajax2();
+
+}
+
+function add_data_to_chart(dam_height_y, volume_x, myChart) {
+	// var n = myChart.series[0].data.length;
+	// var beginDate = Date.parse(response_data.query.startdate);
+	// for (var i = 0; i < response_data.data.length; i++){
+	// 	if (response_data.data[i] !== null) {
+    var newPoint = [volume_x, dam_height_y];
+    myChart.series[0].addPoint(newPoint);
+
 }
 

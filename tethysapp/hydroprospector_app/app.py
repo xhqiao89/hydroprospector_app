@@ -34,6 +34,11 @@ class HydroprospectorApp(TethysAppBase):
                 url='hydroprospector-app/run-wd',
                 controller='hydroprospector_app.controllers.run_wd'
             ),
+            UrlMap(
+                name='run-sc',
+                url='hydroprospector-app/run-sc',
+                controller='hydroprospector_app.controllers.run_sc'
+            )
         )
 
         return url_maps
