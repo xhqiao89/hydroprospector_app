@@ -1,7 +1,8 @@
-var map, click_point_layer, river_layer, basin_layer, snap_point_layer;
+var map, click_point_layer, river_layer, basin_layer, snap_point_layer,lake_layer;
 var outlet_x, outlet_y, dam_height, interval;
 var snappoint_coords, snappoint_x, snappoint_y;
 var chart;
+var dam_height_list, lake_volume_list, lake_geojson_list;
 
 var wd_status = $('#wd-status');
 var sc_status = $('#sc-status');
@@ -77,7 +78,7 @@ $(document).ready(function () {
     style: new ol.style.Style({
         stroke: new ol.style.Stroke({
         color: 'blue',
-        lineDash: [4],
+        lineDash: [0],
         width: 3
         }),
         fill: new ol.style.Fill({
@@ -86,12 +87,29 @@ $(document).ready(function () {
     })
     });
 
-    map.addLayer(bing_layer);
+    lake_layer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+        features: new ol.format.GeoJSON()
+    }),
+    style: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+        color: 'red',
+        lineDash: [0],
+        width: 1
+        }),
+        fill: new ol.style.Fill({
+        color: 'rgba(255, 0, 0, 0.5)'
+        })
+    })
+    });
 
+
+    map.addLayer(bing_layer);
     map.addLayer(click_point_layer);
+    map.addLayer(snap_point_layer);
     //map.addLayer(river_layer);
     map.addLayer(basin_layer);
-    map.addLayer(snap_point_layer);
+    map.addLayer(lake_layer);
 
     var ylat = 40.1;
     var xlon = -111.55;
@@ -138,9 +156,9 @@ $(document).ready(function () {
 		yAxis: {
 			title: {
 				text: 'Dam height(m)'
-			},
-			min: 0.0,
-			max: 100.0
+			}
+			// min: 0.0,
+			// max: 100.0
 		},
 		legend: {
 			enabled: false
@@ -156,15 +174,9 @@ $(document).ready(function () {
 					events: {
 						click: function (e) {
 							// mouse click event
-							console.log('you clicked the chart!');
-							var selected_date = Highcharts.dateFormat('%Y-%m-%d', this.x);
-							add_snow_pixels_to_map(map, selected_date);
-						},
-						mouseOver: function() {
-							// mouse hover event
-							console.log('mouse over!');
-							var selected_date = Highcharts.dateFormat('%Y-%m-%d', this.x);
-							add_snow_pixels_to_map(map, selected_date);
+							console.log('You clicked the chart!');
+							var selected_dam_height = this.y;
+							add_lake_to_map(map, selected_dam_height);
 						}
 					}
 				}
@@ -194,7 +206,7 @@ $(document).ready(function () {
 	};
 
 	chart_options.series[0].type = 'line';
-	chart_options.series[0].name = 'Storage Capacity';
+	chart_options.series[0].name = 'Dam Height';
 	chart = new Highcharts.Chart(chart_options);
 
 });
@@ -290,21 +302,6 @@ function sc_waiting_output() {
     document.getElementById('sc-status').innerHTML = wait_text;
 }
 
-// var csrftoken = $.cookie('csrftoken');
-//
-// function csrfSafeMethod(method) {
-//     // these HTTP methods do not require CSRF protection
-//     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-// }
-//
-// $.ajaxSetup({
-//     beforeSend: function(xhr, settings) {
-//         if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-//             xhr.setRequestHeader("X-CSRFToken", csrftoken);
-//         }
-//     }
-// });
-
 // using jQuery
 function getCookie(name) {
     var cookieValue = null;
@@ -331,7 +328,9 @@ function run_sc_calc(){
     chart.series[0].setData([]);
 
     dam_height = document.getElementById("damHeight").value;
+    dam_height = parseFloat(dam_height);
     interval = document.getElementById("interval").value;
+    interval = parseFloat(interval);
 
     // read snapped point coordinates from snap point layer
     var snappoint_source = snap_point_layer.getSource();
@@ -342,12 +341,23 @@ function run_sc_calc(){
     snappoint_y = snappoint_coords.toString().split(',')[1];
     // conver watershed feature in basin layer to geojson
     var watershed_geojson = feature2geojson(basin_layer.getSource().getFeatures()[0]);
-        // alert(watershed_geojson);
+    // alert(watershed_geojson);
 
-    var dam_list=[5,10,15,20,25,30,35,40,45,50,55,60];
     //the number of the request currently executed
     var iRequest = 0;
-    var lake_volume_list=[];
+
+    //create dam height list based on dam_height and interval
+    //dam_height_list=[5,10,15,20,25,30,35,40,45,50,55,60];
+    dam_height_list=[];
+    for(var i=interval; i < dam_height;){
+        dam_height_list.push(i);
+        i=i+interval;
+    }
+    dam_height_list.push(dam_height);
+    console.log("dam height list:" + dam_height_list);
+
+    lake_geojson_list = [];
+    lake_volume_list=[];
 
     // Instead of using a for-loop of ajax calls, the benefit of using recursive calls of ajax is to make sure the results come
     //back in sequence as they were sent.
@@ -362,15 +372,15 @@ function run_sc_calc(){
             data: {
                 'outlet_x': snappoint_x,
                 'outlet_y': snappoint_y,
-                'dam_height':dam_list[iRequest],
+                'dam_height':dam_height_list[iRequest],
                 'watershed_geojson':watershed_geojson
         },
         success: function (data) {
 
-            //basin_layer.getSource().addFeatures(geojson2feature(data.lake_GEOJSON));
-            var lake_volume_str = data.lake_volume;
+            //lake_layer.getSource().addFeatures(geojson2feature(data.lake_GEOJSON));
+            var lake_volume_str = data.lake_volume;;
+            var lake_geojson = data.lake_GEOJSON;
 
-            map.getView().fit(basin_layer.getSource().getExtent(), map.getSize())
 
             if (iRequest === 0) {
                 // set_chart_tooltip(chart, response_data.tile,
@@ -383,19 +393,18 @@ function run_sc_calc(){
 
             lake_volume_list.push(lake_volume);
             console.log(lake_volume_list);
+            lake_geojson_list.push(lake_geojson);
+            //console.log(lake_geojson_list);
 
-            add_data_to_chart(dam_list[iRequest], lake_volume, chart);
+            add_data_to_chart(dam_height_list[iRequest], lake_volume, chart);
 
             iRequest++;
-            if (iRequest < dam_list.length) {
+            if (iRequest < dam_height_list.length) {
                 ajax2();
             }else{
                 sc_status.addClass('success');
                 sc_status.html('<em>Success!</em>');
             }
-
-
-
 
         },
         error: function (jqXHR, textStatus, errorThrown) {
@@ -419,6 +428,18 @@ function add_data_to_chart(dam_height_y, volume_x, myChart) {
 	// 	if (response_data.data[i] !== null) {
     var newPoint = [volume_x, dam_height_y];
     myChart.series[0].addPoint(newPoint);
+
+}
+
+function add_lake_to_map(map, selected_dam_height) {
+
+    lake_layer.getSource().clear();
+    console.log("selected dam height is: "+ selected_dam_height);
+    var iDamheight = dam_height_list.indexOf(selected_dam_height);
+    var selected_lake_geojson = lake_geojson_list[iDamheight];
+    //console.log(selected_lake_geojson);
+
+    lake_layer.getSource().addFeatures(geojson2feature(selected_lake_geojson));
 
 }
 

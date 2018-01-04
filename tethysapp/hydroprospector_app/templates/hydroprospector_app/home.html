@@ -22,17 +22,16 @@
 {% endblock %}
 
 {% block app_navigation_items %}
-  <h6>Welcome to HydroProspector App!</h6>
-  <h6>Step1: Please click on the map to select an outlet to delineate watershed.</h6>
-
+  <p>Welcome to HydroProspector App!</p>
+  <br>
+  <p>Step1: Please click on the map to select an outlet to delineate watershed.</p>
   <div id="wd-status"></div>
   <br>
-
-  <h6>Step2: Input dam height and interval: </h6>
+  <p>Step2: Input dam height and interval: </p>
   {% gizmo TextInput damHeight %}
   {% gizmo TextInput interval %}
 
-  <h6>Step3: Click button to run.</h6>
+  <p>Step3: Click button to run.</p>
   {% gizmo Botton btnCalc %}
 
   <div id="sc-status"></div>
@@ -40,8 +39,9 @@
 {% endblock %}
 
 {% block app_content %}
-  <div id="map"></div>
-  <div id="sc-chart"></div>
+  <div id="map" style="width: 100%; height: 450px;"></div>
+  <div id="sc-chart" style="width: 100%; height: 250px"></div>
+  <p id="chart-label">Storage Capacity(m³)</p>
 
 {% endblock %}
 
