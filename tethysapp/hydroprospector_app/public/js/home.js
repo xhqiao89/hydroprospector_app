@@ -378,7 +378,7 @@ function run_sc_calc(){
         success: function (data) {
 
             //lake_layer.getSource().addFeatures(geojson2feature(data.lake_GEOJSON));
-            var lake_volume_str = data.lake_volume;;
+            var lake_volume_str = data.lake_volume;
             var lake_geojson = data.lake_GEOJSON;
 
 
@@ -397,6 +397,7 @@ function run_sc_calc(){
             //console.log(lake_geojson_list);
 
             add_data_to_chart(dam_height_list[iRequest], lake_volume, chart);
+            add_lake_to_map(map, dam_height_list[iRequest]);
 
             iRequest++;
             if (iRequest < dam_height_list.length) {
