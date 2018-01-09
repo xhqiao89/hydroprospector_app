@@ -26,13 +26,6 @@ $(document).ready(function () {
 		})
 	});
 
-    // river_layer = new ol.layer.Vector({
-    //     source: new ol.source.Vector({
-    //       url: "/static/watershed_delineation_app/kml/streams_1k_vect.kml",
-    //       format: new ol.format.KML(),
-    //      })
-    //   });
-
     click_point_layer = new ol.layer.Vector({
       source: new ol.source.Vector(),
       style: new ol.style.Style({
@@ -103,16 +96,27 @@ $(document).ready(function () {
     })
     });
 
+    river_layer = new ol.layer.Tile({
+        source: new ol.source.TileWMS({
+            //url: 'https://geoserver.byu.edu/arcgis/services/sherry/utah_streams1k/MapServer/WMSServer?',
+            url:'https://geoserver.byu.edu/arcgis/services/sherry/dr_streams/MapServer/WMSServer?',
+            params: {'LAYERS': '0'},
+            crossOrigin: 'anonymous'
+        }),
+        keyword: 'dr'
+    });
 
     map.addLayer(bing_layer);
     map.addLayer(click_point_layer);
     map.addLayer(snap_point_layer);
-    //map.addLayer(river_layer);
+    map.addLayer(river_layer);
     map.addLayer(basin_layer);
     map.addLayer(lake_layer);
 
-    var ylat = 40.1;
-    var xlon = -111.55;
+    // var ylat = 40.1;
+    // var xlon = -111.55;
+    var ylat = 18.9108;
+    var xlon = -71.2500;
     CenterMap(xlon,ylat);
     map.getView().setZoom(10);
 
@@ -246,6 +250,7 @@ function geojson2feature(myGeoJSON) {
 
 function run_wd_calc(xlon, ylat){
 
+    lake_layer.getSource().clear();
     basin_layer.getSource().clear();
     snap_point_layer.getSource().clear();
     wd_status.removeClass('success');
@@ -321,6 +326,8 @@ function getCookie(name) {
 var csrftoken = getCookie('csrftoken');
 
 function run_sc_calc(){
+
+    lake_layer.getSource().clear();
 
     sc_status.removeClass('success');
     sc_status.removeClass('error');

@@ -6,7 +6,7 @@ class HydroprospectorApp(TethysAppBase):
     Tethys app class for Hydroprospector App.
     """
 
-    name = 'Hydroprospector App'
+    name = 'HydroProspector App'
     index = 'hydroprospector_app:home'
     icon = 'hydroprospector_app/images/icon.gif'
     package = 'hydroprospector_app'

@@ -51,11 +51,11 @@ def run_wd(request):
             inputs=[("outlet_x",xlon),
                     ("outlet_y",ylat)]
 
-            execution = wps.execute(processid, inputs)
+            execution = wps.execute(processid, inputs, output="message")
             monitorExecution(execution)
             # extract watershed geojson
-            watershed_GEOJSON =  execution.processOutputs[0].data[0]
-            snappoint_GEOJSON = execution.processOutputs[1].data[0]
+            watershed_GEOJSON =  execution.processOutputs[1].data[0]
+            snappoint_GEOJSON = execution.processOutputs[2].data[0]
             status = execution.status
 
             # Check results
@@ -95,7 +95,7 @@ def run_sc(request):
                     ("water_level", dam_height),
                     ("max_boundary", watershed_geojson)]
 
-            execution = wps.execute(processid, inputs)
+            execution = wps.execute(processid, inputs, output="lake_volume")
             monitorExecution(execution)
             # extract watershed geojson
             lake_GEOJSON =  execution.processOutputs[1].data[0]
