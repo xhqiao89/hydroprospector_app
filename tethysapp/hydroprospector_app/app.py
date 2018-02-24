@@ -8,10 +8,10 @@ class HydroprospectorApp(TethysAppBase):
 
     name = 'HydroProspector App'
     index = 'hydroprospector_app:home'
-    icon = 'hydroprospector_app/images/icon.gif'
+    icon = 'hydroprospector_app/images/damicon.png'
     package = 'hydroprospector_app'
     root_url = 'hydroprospector-app'
-    color = '#27ae60'
+    color = '#8033ff'
     description = 'Place a brief description of your app here.'
     tags = ''
     enable_feedback = False

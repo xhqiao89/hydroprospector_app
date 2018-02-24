@@ -12,12 +12,12 @@ def home(request):
     """
     damHeight = TextInput(display_text='Dam Height (m):',
                            name="damHeight",
-                           initial="200",
+                           initial="100",
                            disabled=False,
                            attributes="")
     interval = TextInput(display_text='Interval :',
                            name="interval",
-                           initial="20",
+                           initial="10",
                            disabled=False,
                            attributes="")
     btnCalc = Button(display_text="Calculate Storage Capacity Curve",
