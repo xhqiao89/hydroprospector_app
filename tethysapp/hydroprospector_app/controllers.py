@@ -5,6 +5,28 @@ from tethys_sdk.gizmos import Button,TextInput
 from owslib.wps import WebProcessingService
 from owslib.wps import monitorExecution
 
+from multiprocessing import Process
+import os
+
+# this part just for multiprocessing test
+def info(title):
+    print title
+    print 'module name:', __name__
+    if hasattr(os, 'getppid'):  # only available on Unix
+        print 'parent process:', os.getppid()
+    print 'process id:', os.getpid()
+
+
+
+def myfunc():
+    print "myfunc start---------------"
+    info("myfunc")
+    import time
+    time.sleep(60)
+    print "myfunc end-------------"
+#this part just for multiprocessing test
+
+
 @login_required()
 def home(request):
     """
@@ -20,6 +42,10 @@ def home(request):
                            initial="10",
                            disabled=False,
                            attributes="")
+    btnDelin = Button(display_text="Delinate Watershed",
+                      name="btnDelin",
+                      attributes="onclick=run_wd_calc()",
+                      submit=False)
     btnCalc = Button(display_text="Calculate Storage Capacity Curve",
                       name="btnCalc",
                       attributes="onclick=run_sc_calc()",
@@ -28,8 +54,18 @@ def home(request):
     context = {
         'damHeight': damHeight,
         'interval':interval,
+        'btnDelin':btnDelin,
         'btnCalc': btnCalc
     }
+
+    # this part just for multiprocessing test
+    # info("Main Line")
+    # print "Pre: Process------------------------"
+    # p = Process(target=myfunc)
+    # # p.daemon = True
+    # p.start()
+    #
+    # print "POST: Process-----------------------"
 
 
     return render(request, 'hydroprospector_app/home.html', context)
@@ -44,6 +80,7 @@ def run_wd(request):
             ylat = request.GET.get("ylat", None)
 
             # Run watersheddelineationprocess service
+            #wps = WebProcessingService('https://tethys-staging.byu.edu/tethys_wps/?', verbose=False)
             wps = WebProcessingService('http://127.0.0.1:8000/tethys_wps/?', verbose=False)
 
             processid = 'watersheddelineationprocess'
@@ -85,7 +122,8 @@ def run_sc(request):
             dam_height = request.POST.get("dam_height", None)
             watershed_geojson = request.POST.get("watershed_geojson", None)
 
-            # Run watersheddelineationprocess service
+            # Run reservoircalculation service
+            #wps = WebProcessingService('https://tethys-staging.byu.edu/tethys_wps/?', verbose=False)
             wps = WebProcessingService('http://127.0.0.1:8000/tethys_wps/?', verbose=False)
 
             processid = 'reservoircalculationprocess'

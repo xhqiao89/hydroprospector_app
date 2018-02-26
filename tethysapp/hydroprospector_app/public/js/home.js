@@ -2,6 +2,7 @@ var map, click_point_layer, river_layer, basin_layer, snap_point_layer,lake_laye
 var outlet_x, outlet_y, dam_height, interval;
 var snappoint_coords, snappoint_x, snappoint_y;
 var chart;
+var is_running = false;
 var dam_height_list, lake_volume_list, lake_geojson_list;
 
 var wd_status = $('#wd-status');
@@ -70,12 +71,12 @@ $(document).ready(function () {
     }),
     style: new ol.style.Style({
         stroke: new ol.style.Stroke({
-        color: 'blue',
-        lineDash: [0],
+        color: '#0F08A6',
+        lineDash: [4],
         width: 3
         }),
         fill: new ol.style.Fill({
-        color: 'rgba(0, 0, 255, 0.1)'
+        color: 'rgba(0, 0, 255, 0.3)'
         })
     })
     });
@@ -86,7 +87,7 @@ $(document).ready(function () {
     }),
     style: new ol.style.Style({
         stroke: new ol.style.Stroke({
-        color: 'red',
+        color: '#FF0000',
         lineDash: [0],
         width: 1
         }),
@@ -126,9 +127,8 @@ $(document).ready(function () {
 
         outlet_x = coordinate[0];
         outlet_y = coordinate[1];
-        run_wd_calc(outlet_x,outlet_y);
-        // map.getView().setCenter(evt.coordinate);
-        // map.getView().setZoom(14);
+        map.getView().setCenter(evt.coordinate);
+        map.getView().setZoom(12);
 
     });
 
@@ -225,6 +225,11 @@ function CenterMap(xlon,ylat){
 }
 
 function addClickPoint(coordinates){
+
+    if (is_running == true){
+        return;
+    }
+
     // Check if the feature exists. If not then create it.
     // If it does exist, then just change its geometry to the new coords.
     var geometry = new ol.geom.Point(coordinates);
@@ -250,12 +255,17 @@ function geojson2feature(myGeoJSON) {
 
 function run_wd_calc(xlon, ylat){
 
+    if (is_running == true){
+        return;
+    }
+
     lake_layer.getSource().clear();
     basin_layer.getSource().clear();
     snap_point_layer.getSource().clear();
     wd_status.removeClass('success');
     wd_status.removeClass('error');
     wd_waiting_output();
+    is_running = true;
 
     $.ajax({
         type: 'GET',
@@ -269,19 +279,19 @@ function run_wd_calc(xlon, ylat){
 
             basin_layer.getSource().addFeatures(geojson2feature(data.watershed_GEOJSON));
             snap_point_layer.getSource().addFeatures(geojson2feature(data.snappoint_GEOJSON));
-            // wd_status.removeClass('calculating');
             wd_status.addClass('success');
             wd_status.html('<em>Success!</em>');
 
-            map.getView().fit(basin_layer.getSource().getExtent(), map.getSize())
+            map.getView().fit(basin_layer.getSource().getExtent(), map.getSize());
+            is_running = false;
 
 
         },
         error: function (jqXHR, textStatus, errorThrown) {
             alert("Error");
-            // wd_status.removeClass('calculating');
             wd_status.addClass('error');
             wd_status.html('<em>' + errorThrown + '</em>');
+            is_running = false;
         }
     });
 }
@@ -327,6 +337,10 @@ var csrftoken = getCookie('csrftoken');
 
 function run_sc_calc(){
 
+    if (is_running == true){
+        return;
+    }
+
     lake_layer.getSource().clear();
 
     sc_status.removeClass('success');
@@ -365,6 +379,8 @@ function run_sc_calc(){
 
     lake_geojson_list = [];
     lake_volume_list=[];
+
+    is_running = true;
 
     // Instead of using a for-loop of ajax calls, the benefit of using recursive calls of ajax is to make sure the results come
     //back in sequence as they were sent.
@@ -412,14 +428,15 @@ function run_sc_calc(){
             }else{
                 sc_status.addClass('success');
                 sc_status.html('<em>Success!</em>');
+                is_running = false;
             }
 
         },
         error: function (jqXHR, textStatus, errorThrown) {
             alert("Error");
-            // wd_status.removeClass('calculating');
             sc_status.addClass('error');
             sc_status.html('<em>' + errorThrown + '</em>');
+            is_running = false;
         }
     });
 
