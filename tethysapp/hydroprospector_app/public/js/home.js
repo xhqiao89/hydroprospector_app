@@ -127,8 +127,8 @@ $(document).ready(function () {
 
         outlet_x = coordinate[0];
         outlet_y = coordinate[1];
-        map.getView().setCenter(evt.coordinate);
-        map.getView().setZoom(12);
+        // map.getView().setCenter(evt.coordinate);
+        // map.getView().setZoom(12);
 
     });
 

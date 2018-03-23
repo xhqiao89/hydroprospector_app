@@ -5,25 +5,25 @@ from tethys_sdk.gizmos import Button,TextInput
 from owslib.wps import WebProcessingService
 from owslib.wps import monitorExecution
 
-from multiprocessing import Process
-import os
+# from multiprocessing import Process
+# import os
 
 # this part just for multiprocessing test
-def info(title):
-    print title
-    print 'module name:', __name__
-    if hasattr(os, 'getppid'):  # only available on Unix
-        print 'parent process:', os.getppid()
-    print 'process id:', os.getpid()
-
-
-
-def myfunc():
-    print "myfunc start---------------"
-    info("myfunc")
-    import time
-    time.sleep(60)
-    print "myfunc end-------------"
+# def info(title):
+#     print title
+#     print 'module name:', __name__
+#     if hasattr(os, 'getppid'):  # only available on Unix
+#         print 'parent process:', os.getppid()
+#     print 'process id:', os.getpid()
+#
+#
+#
+# def myfunc():
+#     print "myfunc start---------------"
+#     info("myfunc")
+#     import time
+#     time.sleep(60)
+#     print "myfunc end-------------"
 #this part just for multiprocessing test
 
 
