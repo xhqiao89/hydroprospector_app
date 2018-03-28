@@ -105,6 +105,8 @@ def run_wd(request):
 
     except Exception as ex:
         message = ex.message
+        print ex
+        print ex.message
 
     return JsonResponse({"watershed_GEOJSON":watershed_GEOJSON,
                         "snappoint_GEOJSON":snappoint_GEOJSON,
